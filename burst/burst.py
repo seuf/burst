@@ -11,25 +11,23 @@ import re
 import json
 import time
 from threading import Thread
-from elementum.provider import append_headers, get_setting, log
-if PY3:
-    from queue import Queue
-    from urllib.parse import urlparse
-    from urllib.parse import unquote
-    basestring = str
-    long = int
-else:
-    from Queue import Queue
-    from urlparse import urlparse
-    from urllib import unquote
+from queue import Queue
+from urllib.parse import urlparse
+from urllib.parse import unquote
+basestring = str
+long = int
+# else:
+#     from Queue import Queue
+#     from urlparse import urlparse
+#     from urllib import unquote
 from .parser.ehp import Html
-from kodi_six import xbmc, xbmcgui, xbmcaddon, py2_encode
+#from kodi_six import xbmc, xbmcgui, xbmcaddon
 
 from .provider import process
 from .providers.definitions import definitions, longest
 from .filtering import apply_filters, Filtering
 from .client import USER_AGENT, Client
-from .utils import ADDON_ICON, notify, translation, sizeof, get_icon_path, get_enabled_providers, get_alias
+from .utils import ADDON_ICON, notify, translation, sizeof, get_icon_path, get_enabled_providers, get_alias, append_headers, get_setting, log
 
 provider_names = []
 provider_results = []
@@ -40,13 +38,8 @@ timeout = get_setting("timeout", int)
 special_chars = "()\"':.[]<>/\\?"
 
 if auto_timeout:
-    elementum_addon = xbmcaddon.Addon(id='plugin.video.elementum')
-    if elementum_addon:
-        if elementum_addon.getSetting('custom_provider_timeout_enabled') == "true":
-            timeout = int(elementum_addon.getSetting('custom_provider_timeout')) - 2
-        else:
-            timeout = 28
-        log.debug("Using timeout from Elementum: %d seconds" % (timeout))
+    timeout = 28
+    log.debug("Using timeout from Elementum: %d seconds" % (timeout))
 
 
 def search(payload, method="general"):
@@ -117,18 +110,8 @@ def search(payload, method="general"):
 
     log.info("Burstin' with %s" % ", ".join([definitions[provider]['name'] for provider in providers]))
 
-    if get_setting('kodi_language', bool):
-        kodi_language = xbmc.getLanguage(xbmc.ISO_639_1)
-        if not kodi_language:
-            log.warning("Kodi returned empty language code...")
-        elif 'titles' not in payload or not payload['titles']:
-            log.info("No translations available...")
-        elif payload['titles'] and kodi_language not in payload['titles']:
-            log.info("No '%s' translation available..." % kodi_language)
-
-    p_dialog = xbmcgui.DialogProgressBG()
     if not payload['silent']:
-        p_dialog.create('Elementum [COLOR FFFF6B00]Burst[/COLOR]', translation(32061))
+        log.info(translation(32061))
 
     for provider in providers:
         available_providers += 1
@@ -146,13 +129,11 @@ def search(payload, method="general"):
         if timer > timeout:
             break
         message = translation(32062) % available_providers if available_providers > 1 else translation(32063)
-        if not payload['silent']:
-            p_dialog.update(int((total - available_providers) / total * 100), message=message)
+        log.info(message)
+        # if not payload['silent']:
+        #     log.info(message % int((total - available_providers) / total * 100))
         time.sleep(0.25)
 
-    if not payload['silent']:
-        p_dialog.close()
-    del p_dialog
 
     if available_providers > 0:
         message = ', '.join(provider_names)
@@ -183,7 +164,7 @@ def got_results(provider, results):
     global provider_results
     global available_providers
     definition = definitions[provider]
-    definition = get_alias(definition, get_setting("%s_alias" % provider))
+    #definition = get_alias(definition, get_setting("%s_alias" % provider))
 
     max_results = get_setting('max_results', int)
     sort_by = get_setting('sort_by', int)
@@ -276,7 +257,7 @@ def extract_torrents(provider, client):
                 headers['Referer'] = referer
 
             uri = torrent.split('|')  # Split cookies for private trackers
-            subclient.open(py2_encode(uri[0]), headers=headers)
+            subclient.open(uri[0], headers=headers)
 
             if 'bittorrent' in subclient.headers.get('content-type', ''):
                 log.debug('[%s] bittorrent content-type for %s' % (provider, repr(torrent)))
@@ -382,7 +363,7 @@ def extract_torrents(provider, client):
 
             if name and torrent and needs_subpage and not torrent.startswith('magnet'):
                 if not torrent.startswith('http'):
-                    torrent = definition['root_url'] + py2_encode(torrent)
+                    torrent = definition['root_url'] + torrent
                 t = Thread(target=extract_subpage, args=(q, name, torrent, size, seeds, peers, info_hash, referer))
                 threads.append(t)
             else:

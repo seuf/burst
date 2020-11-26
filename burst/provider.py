@@ -11,10 +11,9 @@ import re
 import json
 import urllib
 from .client import Client
-from elementum.provider import log, get_setting, set_setting
 from .providers.definitions import definitions, longest
-from .utils import ADDON_PATH, get_int, clean_size, get_alias
-from kodi_six import xbmc, xbmcaddon, py2_encode
+from .utils import ADDON_PATH, get_int, clean_size, get_alias, log, get_setting, set_setting, py2_encode
+#from kodi_six import xbmc, xbmcaddon
 if PY3:
     from urllib.parse import quote
     unicode = str
@@ -53,13 +52,13 @@ def generate_payload(provider, generator, filtering, verify_name=True, verify_si
             results.append({
                 "name": name,
                 "uri": uri,
-                "info_hash": info_hash,
+                #"info_hash": info_hash,
                 "size": size,
                 "seeds": sort_seeds,
                 "peers": get_int(peers),
-                "language": definition["language"] if 'language' in definition else 'en',
-                "provider": '[COLOR %s]%s[/COLOR]' % (definition['color'], definition['name']),
-                "icon": os.path.join(ADDON_PATH, 'burst', 'providers', 'icons', '%s.png' % provider),
+                #"language": definition["language"] if 'language' in definition else 'en',
+                "provider": definition['name'],
+                #"icon": os.path.join(ADDON_PATH, 'burst', 'providers', 'icons', '%s.png' % provider),
                 "sort_resolution": sort_resolution,
                 "sort_balance": sort_balance
             })

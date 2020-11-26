@@ -12,10 +12,9 @@ import urllib3
 import dns.resolver
 import requests
 
-from elementum.provider import log, get_setting
 from time import sleep
 from urllib3.util import connection
-from .utils import encode_dict
+from .utils import encode_dict, log, get_setting
 if PY3:
     from http.cookiejar import LWPCookieJar
     from urllib.parse import urlparse, urlencode
@@ -24,15 +23,15 @@ else:
     from cookielib import LWPCookieJar
     from urllib import urlencode
     from urlparse import urlparse
-from kodi_six import xbmcaddon
 
 from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 
-from kodi_six.xbmc import translatePath
+#from kodi_six.xbmc import translatePath
 
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.21 Safari/537.36"
-PATH_TEMP = translatePath("special://temp")
+#PATH_TEMP = translatePath("special://temp")
+PATH_TEMP = "/tmp"
 
 # Custom DNS default data
 dns_cache = {}
@@ -133,8 +132,8 @@ class Client:
 
         global dns_public_list
         global dns_opennic_list
-        dns_public_list = get_setting("public_dns_list", unicode).replace(" ", "").split(",")
-        dns_opennic_list = get_setting("opennic_dns_list", unicode).replace(" ", "").split(",")
+        # dns_public_list = get_setting("public_dns_list", unicode).replace(" ", "").split(",")
+        # dns_opennic_list = get_setting("opennic_dns_list", unicode).replace(" ", "").split(",")
         # socket.setdefaulttimeout(60)
 
         # Parsing proxy information
@@ -156,18 +155,7 @@ class Client:
         if get_setting("use_public_dns", bool):
             connection.create_connection = patched_create_connection
 
-        if get_setting("use_elementum_proxy", bool):
-            elementum_addon = xbmcaddon.Addon(id='plugin.video.elementum')
-            if elementum_addon and elementum_addon.getSetting('internal_proxy_enabled') == "true":
-                self.proxy_url = "{0}://{1}:{2}".format("http", "127.0.0.1", "65222")
-                if info and "internal_proxy_url" in info:
-                    self.proxy_url = info["internal_proxy_url"]
-
-                self.session.proxies = {
-                    'http': self.proxy_url,
-                    'https': self.proxy_url,
-                }
-        elif proxy['enabled']:
+        if proxy['enabled']:
             if proxy['use_type'] == 0 and info and "proxy_url" in info:
                 log.debug("Setting proxy from Elementum: %s" % (info["proxy_url"]))
             elif proxy['use_type'] == 1:

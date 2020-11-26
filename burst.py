@@ -5,8 +5,8 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'resources', 'site-packages'))
 
 from burst.burst import search
-from elementum.provider import register
 
+import pprint
 
 def search_movie(payload):
     return search(payload, 'movie')
@@ -19,5 +19,7 @@ def search_season(payload):
 def search_episode(payload):
     return search(payload, 'episode')
 
-
-register(search, search_movie, search_episode, search_season)
+#pp = pprint.PrettyPrinter(width=41, compact=True)
+#res = search_movie({"title": "Avangers End Game", "titles": {}, "year": "2019"})
+#res = search_episode({"title": "Silicon Valley", "titles": {}, "year": "2019", "season": 6, "episode": 6})
+#pp.pprint(res)

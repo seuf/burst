@@ -8,7 +8,9 @@ from future.utils import PY2, PY3, iteritems
 
 import os
 import re
-from elementum.provider import get_setting
+import yaml
+import logging
+import pprint
 from .providers.definitions import definitions
 if PY3:
     from urllib.parse import urlparse
@@ -16,19 +18,22 @@ if PY3:
     unicode = str
 else:
     from urlparse import urlparse
-from kodi_six import xbmc, xbmcgui, xbmcaddon
+#from kodi_six import xbmc, xbmcgui, xbmcaddon
+import yaml
 
-ADDON = xbmcaddon.Addon()
-ADDON_ID = ADDON.getAddonInfo("id")
-ADDON_NAME = ADDON.getAddonInfo("name")
-ADDON_PATH = ADDON.getAddonInfo("path")
-ADDON_ICON = ADDON.getAddonInfo("icon")
-ADDON_PROFILE = ADDON.getAddonInfo("profile")
-ADDON_VERSION = ADDON.getAddonInfo("version")
-PATH_ADDONS = xbmc.translatePath("special://home/addons/")
-PATH_TEMP = xbmc.translatePath("special://temp")
-if not ADDON_PATH:
-    ADDON_PATH = '..'
+# ADDON = xbmcaddon.Addon()
+# ADDON_ID = ADDON.getAddonInfo("id")
+# ADDON_NAME = ADDON.getAddonInfo("name")
+# ADDON_PATH = ADDON.getAddonInfo("path")
+ADDON_ICON = "icon.png"
+# ADDON_PROFILE = ADDON.getAddonInfo("profile")
+# ADDON_VERSION = ADDON.getAddonInfo("version")
+# PATH_ADDONS = xbmc.translatePath("special://home/addons/")
+# PATH_TEMP = xbmc.translatePath("special://temp")
+PATH_TEMP = "/tmp"
+ADDON_PATH = '.'
+
+pp = pprint.PrettyPrinter(width=41, compact=True)
 
 
 class Magnet:
@@ -138,7 +143,6 @@ def get_enabled_providers(method):
     for provider in definitions:
         if 'enabled' in definitions[provider] and not definitions[provider]['enabled']:
             continue
-
         if get_setting('use_%s' % provider, bool):
             contains = get_setting('%s_contains' % provider, choices=('All', 'Movies', 'Shows'))
             if not contains or contains == "0":
@@ -168,7 +172,7 @@ def translation(id_value):
     Returns:
         str: Translated string
     """
-    return ADDON.getLocalizedString(id_value)
+    return getLocalizedString(id_value)
 
 
 def get_int(string):
@@ -317,9 +321,10 @@ def notify(message, image=None):
         message (str): The message to show in the dialog
         image   (str): Path to an icon for this dialog
     """
-    dialog = xbmcgui.Dialog()
-    dialog.notification(ADDON_NAME, message, icon=image, sound=False)
-    del dialog
+    # dialog = xbmcgui.Dialog()
+    # dialog.notification(ADDON_NAME, message, icon=image, sound=False)
+    # del dialog
+    log.info(message)
 
 
 def clear_cache():
@@ -360,3 +365,80 @@ def encode_dict(dict_in, charset='utf8'):
         return dict_out
     except:
         return dict_in
+
+
+def append_headers(uri, headers):
+    return uri + "|" + "|".join(["%s=%s" % h for h in headers.items()])
+    
+def get_setting(key, converter=str, choices=None):
+    with open('config/config.yml', 'r') as f:
+        try:
+            conf = yaml.safe_load(f)
+            #pp.pprint(conf)
+        except yaml.YAMLError as exc:
+            log.error(exc)
+    if key in conf:
+        value = conf[key]
+        if converter is str:
+            return py2_decode(value)
+        elif converter is bool:
+            return value
+        elif converter is int:
+            return int(value)
+        elif isinstance(choices, (list, tuple)):
+            return choices[int(value)]
+        else:
+            raise TypeError('Acceptable converters are str, unicode, bool and '
+                            'int. Acceptable choices are instances of list '
+                            ' or tuple.')
+    else:
+        print("%s: not in config file" % key)
+
+def set_setting(key, val):
+    return ADDON.setSetting(id=key, value=val)
+
+
+def py2_encode(s, encoding='utf-8', errors='strict'):
+    return s
+
+
+def py2_decode(s, encoding='utf-8', errors='strict'):
+    return s
+
+loggers = {}
+
+def _get_logger(name):
+    global loggers
+
+    # if loggers.get(name):
+    #     return loggers.get(name)
+
+    # else:
+    logger = logging.getLogger('root')
+    if get_setting("logger_silent", bool):
+        logger.setLevel(logging.ERROR)
+    else:
+        logger.setLevel(logging.DEBUG)
+
+    return logger
+
+
+
+log = _get_logger(__name__)
+
+def getLocalizedString(id):
+    search = "msgctxt \"#%s\"" % id
+    found = False
+    string = "not translation found %s" % id
+    with open('resources/language/English/strings.po', 'r') as f:
+        for l in f:
+            l = l.strip()
+            if l.strip() == search:
+                found = True
+            elif found:
+                m = re.search(r'msgid \"(.*)\"', l)
+                if m:
+                    string = m.group(1)
+                    break
+
+    return string

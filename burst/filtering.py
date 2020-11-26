@@ -9,17 +9,14 @@ from future.utils import PY3
 
 import re
 import hashlib
-from elementum.provider import log, get_setting
 from .normalize import normalize_string
 from .providers.definitions import definitions
-from .utils import Magnet, get_int, get_float, clean_number, size_int, get_alias
+from .utils import Magnet, get_int, get_float, clean_number, size_int, get_alias, log, get_setting
 if PY3:
     from html.parser import HTMLParser
     unicode = str
 else:
     from .parser.HTMLParser import HTMLParser
-
-from kodi_six.utils import py2_encode
 
 try:
     from collections import OrderedDict
@@ -645,7 +642,7 @@ def cleanup_results(results_list):
                 if result['uri'] and result['uri'].startswith('magnet'):
                     hash_ = Magnet(result['uri']).info_hash.upper()
                 else:
-                    hash_ = hashlib.md5(py2_encode(result['uri'])).hexdigest()
+                    hash_ = hashlib.md5(result['uri']).hexdigest()
             except:
                 pass
         # try:

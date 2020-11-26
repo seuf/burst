@@ -14,6 +14,7 @@ from future.utils import PY3
 import json
 import re
 import unicodedata
+import logging
 if PY3:
     from urllib.parse import unquote
     from html.parser import HTMLParser
@@ -21,7 +22,7 @@ if PY3:
 else:
     from urllib import unquote
     from .parser.HTMLParser import HTMLParser
-from kodi_six import py2_encode, py2_decode
+from .utils import py2_encode, py2_decode
 
 def clean_title(string=None):
     """

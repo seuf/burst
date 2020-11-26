@@ -8,23 +8,14 @@ from future.utils import PY3, iteritems
 import os
 import sys
 import json
+import logging
 import time
 import collections
 from glob import glob
-if PY3:
-    from urllib.parse import urlparse
-else:
-    from urlparse import urlparse
-    from io import open
+from urllib.parse import urlparse
 
-from elementum.provider import log
-from kodi_six import xbmc, xbmcaddon
 start_time = time.time()
-ADDON = xbmcaddon.Addon()
-ADDON_PATH = ADDON.getAddonInfo("path")
-ADDON_PROFILE = ADDON.getAddonInfo("profile")
-if not ADDON_PATH:
-    ADDON_PATH = ".."
+ADDON_PATH = "."
 
 definitions = {}
 mandatory_fields = {
@@ -55,9 +46,7 @@ def load_providers(path, custom=False):
         for provider in providers:
             update_definitions(provider, providers[provider], custom)
     except Exception as e:
-        import traceback
-        log.error("Failed importing providers from %s: %s", path, repr(e))
-        map(log.error, traceback.format_exc().split("\n"))
+        logging.error("Failed importing providers from %s: %s" % (path, repr(e)))
 
 
 def load_overrides(path, custom=False):
@@ -77,11 +66,10 @@ def load_overrides(path, custom=False):
             log.debug("Imported overrides: %s", repr(overrides))
             for provider in overrides:
                 update_definitions(provider, overrides[provider])
-            log.info("Successfully loaded overrides from %s", os.path.join(path, "overrides.py"))
+            logging.info("Successfully loaded overrides from %s", os.path.join(path, "overrides.py"))
     except Exception as e:
         import traceback
-        log.error("Failed importing %soverrides: %s", "custom " if custom else "", repr(e))
-        map(log.error, traceback.format_exc().split("\n"))
+        logging.error("Failed importing %soverrides: %s", "custom " if custom else "", repr(e))
 
 
 def update_definitions(provider, definition, custom=False):
@@ -130,7 +118,7 @@ load_providers(os.path.join(ADDON_PATH, 'burst', 'providers', 'providers.json'))
 load_overrides(os.path.join(ADDON_PATH, 'burst', 'providers'))
 
 # Load user's custom providers
-custom_providers = os.path.join(xbmc.translatePath(ADDON_PROFILE), "providers")
+custom_providers = os.path.join(ADDON_PATH, "providers")
 if not os.path.exists(custom_providers):
     try:
         os.makedirs(custom_providers)
@@ -142,12 +130,12 @@ for provider_file in glob(os.path.join(custom_providers, "*.json")):
     load_providers(provider_file, custom=True)
 
 # Load user's custom overrides
-custom_overrides = xbmc.translatePath(ADDON_PROFILE)
+custom_overrides = ADDON_PATH
 if os.path.exists(os.path.join(custom_overrides, 'overrides.py')):
     load_overrides(custom_overrides, custom=True)
 
 # Load json overrides
-load_providers(os.path.join(xbmc.translatePath(ADDON_PROFILE), 'overrides.json'))
+load_providers(os.path.join(ADDON_PATH, 'overrides.json'))
 
 # Setting mandatory fields to their default values for each provider.
 for provider in definitions:
@@ -160,4 +148,4 @@ longest = 10
 if len(definitions) > 0:
     longest = len(definitions[sorted(definitions, key=lambda p: len(definitions[p]['name']), reverse=True)[0]]['name'])
 
-log.info("Loading definitions took %fs", time.time() - start_time)
+logging.info("Loading definitions took %fs", time.time() - start_time)
